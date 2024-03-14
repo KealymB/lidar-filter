@@ -4,38 +4,89 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
+#include "sensor_msgs/point_cloud2_iterator.hpp"
 
 using namespace std::chrono_literals;
 
 class LidarFilter : public rclcpp::Node
 {
-  int default_intensity_threshold = 1000;
 public:
-  LidarFilter() : Node("pointcloud_subscriber")
+  LidarFilter() : Node("lidar_filter")
   {
-    this->declare_parameter<int>("intensity_threshold", default_intensity_threshold);
+    this->declare_parameter<int>("intensity_threshold", 1000);
+    this->declare_parameter<int>("message_throttle", 0);
     intensity_threshold_ = this->get_parameter("intensity_threshold").as_int();
+    message_throttle_ = this->get_parameter("message_throttle").as_int();
 
     subscription_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "lidar_topic",
         10,
-        std::bind(&LidarFilter::callback, this, std::placeholders::_1));
+        std::bind(&LidarFilter::lidarDataReceivedCallback, this, std::placeholders::_1));
 
     publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("filtered_lidar_topic", 10);
+
+    RCLCPP_INFO(this->get_logger(), "Filtering out messages with an intensity below %i.", intensity_threshold_);
+    RCLCPP_INFO(this->get_logger(), "Skipping every %ith message", message_throttle_);
   }
 
 private:
-  void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+  void lidarDataReceivedCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   {
-    publisher_->publish(*msg);
+    message_count_++;
+
+    if (message_throttle_ == message_throttle_disabled_)
+    {
+      filterLidarData(msg);
+    }
+    else if (message_count_ % message_throttle_ != 0)
+    {
+      filterLidarData(msg);
+    }
+  }
+
+  void filterLidarData(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+  {
+    sensor_msgs::msg::PointCloud2 filtered_point_cloud = *msg;
+
+    sensor_msgs::PointCloud2Modifier modifier(filtered_point_cloud);
+    sensor_msgs::PointCloud2Iterator<float> iter_intensity(filtered_point_cloud, "intensity");
+
+    size_t index = 0;
+    size_t remaining_points = 0;
+
+    for (size_t i = 0; i < filtered_point_cloud.width; ++i)
+    {
+      if (*iter_intensity >= intensity_threshold_)
+      {
+        remaining_points++;
+        index += filtered_point_cloud.point_step;
+      }
+      else
+      {
+        // Remove point and shift data
+        for (size_t j = 0; j < filtered_point_cloud.point_step; ++j)
+        {
+          filtered_point_cloud.data.erase(filtered_point_cloud.data.begin() + index);
+        }
+      }
+      iter_intensity += 1;
+    }
+
+    filtered_point_cloud.width = remaining_points;
+
+    publisher_->publish(filtered_point_cloud);
   }
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
-  int intensity_threshold_;
+
+  int intensity_threshold_ = 1000;
+  int message_throttle_;
+  int message_throttle_disabled_ = 0;
+  int message_count_ = 0;
 };
 
-int main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<LidarFilter>());

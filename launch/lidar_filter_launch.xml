@@ -1,5 +1,0 @@
-<launch>
-  <node pkg="lidar_filter_assignment" exec="lidar_filter" name="lidar_filter" output="screen">
-      <param name="intensity_threshold" value="5"/>
-  </node>
-</launch>
