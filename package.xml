@@ -3,8 +3,8 @@
 <package format="3">
   <name>lidar_filter_assignment</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="kbromley@lely.com">kealym</maintainer>
+  <description>A filter for pointcloud2 lidar data</description>
+  <maintainer email="kealymmb@gmail.com">kealym bromley</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
