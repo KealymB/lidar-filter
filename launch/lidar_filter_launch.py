@@ -31,7 +31,7 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz2',
         output='screen',
-        arguments=['-d', os.path.join(get_package_share_directory('lidar_filter_assignment'), 'rviz_config.rviz')]
+        arguments=['-d', os.path.join(get_package_share_directory('lidar_filter_assignment'), 'rviz/rviz_config.rviz')]
     )
 
     return LaunchDescription([

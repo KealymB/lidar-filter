@@ -105,7 +105,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.20000000298023224
+      Size (m): 0.10000000149011612
       Style: Flat Squares
       Topic:
         Depth: 5
