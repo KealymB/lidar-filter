@@ -6,4 +6,3 @@ Filter requirements:
 - Intensities under 1000 are filtered out
 - Every X messages are removed
 
-
