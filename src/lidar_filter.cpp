@@ -34,14 +34,20 @@ private:
   {
     message_count_++;
 
-    if (message_throttle_ == message_throttle_disabled_)
+    if (isThrottleDisabled() || shouldThrottleMessage())
     {
       filterLidarData(msg);
     }
-    else if (message_count_ % message_throttle_ != 0)
-    {
-      filterLidarData(msg);
-    }
+  }
+
+  bool shouldThrottleMessage()
+  {
+    return message_count_ % message_throttle_ != 0;
+  }
+
+  bool isThrottleDisabled()
+  {
+    return message_throttle_ == message_throttle_disabled_;
   }
 
   void filterLidarData(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
@@ -63,11 +69,7 @@ private:
       }
       else
       {
-        // Remove point and shift data
-        for (size_t j = 0; j < filtered_point_cloud.point_step; ++j)
-        {
-          filtered_point_cloud.data.erase(filtered_point_cloud.data.begin() + index);
-        }
+        removePoint(filtered_point_cloud, index);
       }
       iter_intensity += 1;
     }
@@ -75,6 +77,14 @@ private:
     filtered_point_cloud.width = remaining_points;
 
     publisher_->publish(filtered_point_cloud);
+  }
+
+  void removePoint(sensor_msgs::msg::PointCloud2 &point_cloud, size_t index)
+  {
+    for (size_t i = 0; i < point_cloud.point_step; ++i)
+    {
+      point_cloud.data.erase(point_cloud.data.begin() + index);
+    }
   }
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;

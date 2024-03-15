@@ -18,7 +18,10 @@ public:
 
         initializePointCloud();
 
-        timer_ = this->create_wall_timer(std::chrono::seconds(1), std::bind(&DummyLidarPublisher::publishPointCloud, this));
+        publish_lidar_timer_ = this->create_wall_timer(std::chrono::seconds(1), std::bind(&DummyLidarPublisher::publishPointCloud, this));
+
+        RCLCPP_INFO(this->get_logger(), "Creating a point cloud with %i points.", number_of_points_);
+        RCLCPP_INFO(this->get_logger(), "Points are within +-%f m of the origin", coordinate_deviation_in_meters_);
     }
 
 private:
@@ -73,15 +76,17 @@ private:
     sensor_msgs::msg::PointField createPointField(const std::string &name, uint8_t datatype, uint32_t count, uint32_t offset)
     {
         sensor_msgs::msg::PointField field;
+
         field.name = name;
         field.datatype = datatype;
         field.count = count;
         field.offset = offset;
+
         return field;
     }
 
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
-    rclcpp::TimerBase::SharedPtr timer_;
+    rclcpp::TimerBase::SharedPtr publish_lidar_timer_;
     sensor_msgs::msg::PointCloud2 pointcloud_msg_;
 
     float coordinate_deviation_in_meters_;
